@@ -28,13 +28,20 @@ namespace MINESWEEPER
         Image findMineImg = new Image();
         Image flagImg = new Image();
 
+        int x = 0;
+        int y = 0;
+        int mine = 0;
+
+        List<List<int>> mineBackground = new List<List<int>>();
+        List<Button> buttons = new List<Button>();
+
         public MainWindow()
         {
             InitializeComponent();
             mineImg.Source = new BitmapImage(new Uri(@"\bin\Debug\mine.png", UriKind.Relative));
             findMineImg.Source = new BitmapImage(new Uri(@"\bin\Debug\findMine.png", UriKind.Relative));
-            flagImg.Source = new BitmapImage(new Uri(@"\bin\Debug\findMine.png", UriKind.Relative));
-
+            flagImg.Source = new BitmapImage(new Uri(@"\bin\Debug\flag.png", UriKind.Relative));
+            
             mineImg.Stretch = Stretch.Uniform;
             findMineImg.Stretch = Stretch.Uniform;
             flagImg.Stretch = Stretch.Uniform;
@@ -46,23 +53,26 @@ namespace MINESWEEPER
         {
             Regex regex = new Regex("[^0-9]+");
             e.Handled = regex.IsMatch(e.Text);
+            return;
         }
 
         //보드 크기, 지뢰 개수를 입력받아 해당 게임보드 생성
         private void Button_GameStart(object sender, RoutedEventArgs e)
         {
+            buttons.Clear();
             //텍스트가 비어있을 경우 오류메세지
             if(boardX.Text == "" || boardY.Text == "" || mineEA.Text == "")
             {
                 MessageBox.Show("입력값을 확인해주세요.");
                 return;
             }
-            int x = int.Parse(boardX.Text);
-            int y = int.Parse(boardY.Text);
-            int mine = int.Parse(mineEA.Text);
+
+            x = int.Parse(boardX.Text);
+            y = int.Parse(boardY.Text);
+            mine = int.Parse(mineEA.Text);
 
             //지뢰 개수가 보드 크기와 같거나 많으면 오류메세지
-            if(x * y <= mine)
+            if (x * y <= mine || mine == 0)
             {
                 MessageBox.Show("지뢰개수를 확인해주세요..");
                 return;
@@ -75,8 +85,8 @@ namespace MINESWEEPER
             //수량이 적을 경우 grid 크기를 조절하여 창의 중앙에 위치하도록 설정
             mainWindow.Width = y > 12 ? sizeX + 60 : 300;
             mainWindow.Height = x > 12 ? sizeY + 120 : 360;
-            grid1.Height = sizeX;
-            grid1.Width = sizeY;
+            grid1.Width = sizeX;
+            grid1.Height = sizeY;
             grid1.Margin = new Thickness(0, 0, 0, y <= 12 ? (Convert.ToInt32(mainWindow.Height) - sizeY - 80) / 2 : 20);
 
             //동적 버튼 생성, 버튼의 크기 20x20 지정, 버튼 이름을 button_번호로 입력하여 해당 번호 사용
@@ -86,18 +96,56 @@ namespace MINESWEEPER
             {
                 for(int j = 0; j < x; j++)
                 {
-                    Button button = new Button();
-                    button.Name = $"button_{j * x + i + 1}";
-                    button.Height = 20;
-                    button.Width = 20;
-                    button.HorizontalAlignment = HorizontalAlignment.Left;
-                    button.VerticalAlignment = VerticalAlignment.Top;
-                    button.Margin = new Thickness(button.Width * i, button.Height * j, 0, 0);
-                    button.PreviewMouseDown += new MouseButtonEventHandler(GameButton_Click);
+                    //Button button = new Button();
+                    buttons.Add(new Button());
+                    buttons[i * x + j].Name = $"button_{i * x + j}";
+                    buttons[i * x + j].Height = 20;
+                    buttons[i * x + j].Width = 20;
+                    buttons[i * x + j].HorizontalAlignment = HorizontalAlignment.Left;
+                    buttons[i * x + j].VerticalAlignment = VerticalAlignment.Top;
+                    buttons[i * x + j].Margin = new Thickness(buttons[i * x + j].Width * j, buttons[i * x + j].Height * i, 0, 0);
+                    buttons[i * x + j].PreviewMouseDown += new MouseButtonEventHandler(GameButton_Click);
 
-                    grid1.Children.Add(button);
+                    grid1.Children.Add(buttons[i * x + j]);
                 }
             }
+            //보드 생성 및 버튼 연동
+            gameBoardCreate();
+            return;
+        }
+
+        //지뢰 랜덤 위치 배정
+        private void MineSufle()
+        {
+            Random random = new Random();
+            for (int i = 0; i < y - 2; i++)
+            {
+                for (int j = 0; j < x - 2; j++)
+                {
+                    int rand_1 = random.Next(j, y);
+                    int rand_2 = random.Next(i, x);
+
+                    int temp = mineBackground[rand_1][rand_2];
+                    mineBackground[rand_1][rand_2] = mineBackground[j][i];
+                    mineBackground[j][i] = temp;
+                }
+            }
+            return;
+        }
+        //게임 보드 생성, 지뢰 생성 후 기본 보드 생성
+        private void gameBoardCreate()
+        {
+            mineBackground.Clear();
+            for (int i = 0; i < y; i++)
+            {
+                List<int> temp = new List<int>();
+                for (int j = 0; j < x; j++)
+                {
+                    temp.Add(j + i * x < mine ? 9 : 0);
+                }
+                mineBackground.Add(temp);
+            }
+            MineSufle();
         }
         private void FindMine(object sender, string right_left)
         {
@@ -111,13 +159,22 @@ namespace MINESWEEPER
             }
             else if(right_left == "Left")
             {
-                //button.IsEnabled = false;
+                if (button.Content == flagImg)
+                {
+                    button.IsEnabled = true;
+                }
+                else
+                {
+                    button.Content = mineBackground[buttonNum / x][buttonNum % x] == 9 ? findMineImg : (object)mineBackground[buttonNum / x][buttonNum % x];
+                    button.IsEnabled = false;
+                }
+                
             }
             else if(right_left == "Right")
             {
-                button.Content = "1";
-                button.Content = flagImg;
+                button.Content = button.Content == null ? flagImg : null;
             }
+            return;
         }
 
         //게임버튼 클릭시 좌클릭, 우클릭, 좌우 동시 클릭 동작 구분 및 동작에 따른 함수 연동
@@ -135,6 +192,8 @@ namespace MINESWEEPER
             {
                 FindMine(sender, "Left");
             }
+
+            return;
         }
     }
 }

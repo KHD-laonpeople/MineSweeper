@@ -73,11 +73,12 @@
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Properties\Resources.Designer.cs">
+    <Resource Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
@@ -96,22 +97,16 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="bin\Debug\findMine.png" />
+    <Resource Include="bin\Debug\findMine.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="bin\Debug\flag.png" />
+    <Resource Include="bin\Debug\flag.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="bin\Debug\mine.png" />
+    <Resource Include="bin\Debug\mine.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="obj\Debug\mine.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="obj\Debug\findMine.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="obj\Debug\flag.png" />
+    <Folder Include="obj\Debug\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

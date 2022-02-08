@@ -32,6 +32,9 @@ namespace MINESWEEPER
         int y = 0;
         int mine = 0;
 
+        int leftButtonCount = 0;
+        int rightButtonCount = 0;
+
         List<List<int>> mineBackground = new List<List<int>>();
         List<Button> buttons = new List<Button>();
 
@@ -56,6 +59,62 @@ namespace MINESWEEPER
             return;
         }
 
+        //지뢰 랜덤 위치 배정, 행 셔플 -> 열 셔플로 진행
+        private void MineSufle()
+        {
+            Random random = new Random();
+            for (int i = 0; i < x; i++)
+            {
+                for (int j = 0; j < y - 1; j++)
+                {
+                    //int rand_1 = random.Next(i, y - 1);
+                    int rand_1 = random.Next(j + 1, y);
+
+                    int temp = mineBackground[rand_1][i];
+                    mineBackground[rand_1][i] = mineBackground[j][i];
+                    mineBackground[j][i] = temp;
+                }
+            }
+            for (int i = 0; i < y; i++)
+            {
+                for (int j = 0; j < x - 1; j++)
+                {
+                    int rand_2 = random.Next(j + 1, x);
+
+                    int temp = mineBackground[i][rand_2];
+                    mineBackground[i][rand_2] = mineBackground[i][j];
+                    mineBackground[i][j] = temp;
+                }
+            }
+            for(int i = 0; i < x; i++)
+            {
+                for(int j = 0; j < y; j++)
+                {
+                    int button_row = j % y;
+                    int button_column = i % x;
+                    mineBackground[button_row][button_column] = mineBackground[button_row][button_column] == 9 ? 9 : CheckRound_MineCount(button_row, button_column);
+                }
+            }
+            
+            return;
+        }
+        //게임 보드 생성, 지뢰 생성 및 기본 보드 생성
+        private void gameBoardCreate()
+        {
+            mineBackground.Clear();
+            leftButtonCount = 0;
+            rightButtonCount = 0;
+            for (int i = 0; i < y; i++)
+            {
+                List<int> temp = new List<int>();
+                for (int j = 0; j < x; j++)
+                {
+                    temp.Add(j + i * x < mine ? 9 : 0);
+                }
+                mineBackground.Add(temp);
+            }
+            MineSufle();
+        }
         //보드 크기, 지뢰 개수를 입력받아 해당 게임보드 생성
         private void Button_GameStart(object sender, RoutedEventArgs e)
         {
@@ -96,7 +155,6 @@ namespace MINESWEEPER
             {
                 for(int j = 0; j < x; j++)
                 {
-                    //Button button = new Button();
                     buttons.Add(new Button());
                     buttons[i * x + j].Name = $"button_{i * x + j}";
                     buttons[i * x + j].Height = 20;
@@ -114,44 +172,170 @@ namespace MINESWEEPER
             return;
         }
 
-        //지뢰 랜덤 위치 배정
-        private void MineSufle()
+        //해당 버튼 주변 지뢰 개수 카운트
+        private int CheckRound_MineCount(int button_row, int button_column)
         {
-            Random random = new Random();
-            for (int i = 0; i < y - 2; i++)
-            {
-                for (int j = 0; j < x - 2; j++)
-                {
-                    int rand_1 = random.Next(j, y);
-                    int rand_2 = random.Next(i, x);
+            int mineCount = 0;
+            if (mineBackground[button_row][button_column] == 9) return 9;
 
-                    int temp = mineBackground[rand_1][rand_2];
-                    mineBackground[rand_1][rand_2] = mineBackground[j][i];
-                    mineBackground[j][i] = temp;
-                }
-            }
-            return;
-        }
-        //게임 보드 생성, 지뢰 생성 후 기본 보드 생성
-        private void gameBoardCreate()
-        {
-            mineBackground.Clear();
-            for (int i = 0; i < y; i++)
+            if (button_row != 0 && button_column != 0 && button_row != (y - 1) && button_column != (x - 1))
             {
-                List<int> temp = new List<int>();
-                for (int j = 0; j < x; j++)
-                {
-                    temp.Add(j + i * x < mine ? 9 : 0);
-                }
-                mineBackground.Add(temp);
+                mineCount = mineBackground[button_row - 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row - 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row + 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row + 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
             }
-            MineSufle();
+            else if (button_row == 0 && button_column == 0)
+            {
+                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row + 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+            }
+            else if (button_row == (y - 1) && button_column == (x - 1))
+            {
+                mineCount = mineBackground[button_row - 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+            }
+            else if (button_row == 0 && button_column == (x - 1))
+            {
+                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row + 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
+            }
+            else if (button_row == (y - 1) && button_column == 0)
+            {
+                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row - 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+            }
+            else if (button_row == 0)
+            {
+                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row + 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row + 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+            }
+            else if (button_column == 0)
+            {
+                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row - 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row + 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+            }
+            else if (button_row == (y - 1))
+            {
+                mineCount = mineBackground[button_row - 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row - 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
+            }
+            else
+            {
+                mineCount = mineBackground[button_row - 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+
+                mineCount = mineBackground[button_row + 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
+                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
+            }
+            return mineCount;
         }
+
+        private void ZeroRound(int buttonNum)
+        {
+            int buttonRowOrigin = buttonNum / x;
+            int buttonColumnOrigin = buttonNum % x;
+            for (int i = -1; i < 2; i++)
+            {
+                for(int j = -1; j < 2; j++)
+                {
+                    int buttonLocation = buttonNum + (i * x) + j;
+                    int buttonRow = buttonLocation / x;
+                    int buttonColumn = buttonLocation % x;
+
+                    if (buttonRowOrigin > 0 && buttonColumnOrigin > 0 && buttonRowOrigin < (y - 1) && buttonColumnOrigin < (x - 1))
+                    {}
+                    //좌측상단 클릭시
+                    else if (buttonRowOrigin == 0 && buttonColumnOrigin == 0)
+                    {
+                        if (i < 0 || j < 0) continue;
+                    }
+                    //우측하단 클릭시
+                    else if (buttonRowOrigin == (y - 1) && buttonColumnOrigin == (x - 1))
+                    {
+                        if (i > 0 || j > 0) continue;
+                    }
+                    //우측상단 클릭시
+                    else if (buttonRowOrigin == 0 && buttonColumnOrigin == (x - 1))
+                    {
+                        if (i < 0 || j > 0) continue;
+                    }
+                    //좌측하단 클릭시
+                    else if (buttonRowOrigin == (y - 1) && buttonColumnOrigin == 0)
+                    {
+                        if (i > 0 || j < 0) continue;
+                    }
+                    //상단면 클릭시
+                    else if (buttonRowOrigin == 0 && buttonColumnOrigin > 0)
+                    {
+                        if (i < 0) continue;
+                    }
+                    //하단면 클릭시
+                    else if (buttonRowOrigin == (y - 1) && buttonColumnOrigin > 0)
+                    {
+                        if (i > 0) continue;
+                    }
+                    //우측면 클릭시
+                    else if (buttonRowOrigin > 0 && buttonColumnOrigin == 0)
+                    {
+                        if (j < 0) continue;
+                    }
+                    //좌측면 클릭시
+                    else if (buttonRowOrigin > 0 && buttonColumnOrigin == (x - 1))
+                    {
+                        if (j > 0) continue;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                    if(buttons[buttonLocation].Content == flagImg)
+                    {
+                        return;
+                    }
+                    if(!(i == 0 && j == 0)) leftButtonCount++;
+                    buttons[buttonLocation].Content = CheckRound_MineCount(buttonRow, buttonColumn);
+                    buttons[buttonLocation].IsEnabled = false;
+                }
+            }
+        }
+        //마우스 동작 구현
         private void FindMine(object sender, string right_left)
         {
             Button button = sender as Button;
             string[] buttonNumber = button.Name.Split('_');
             int buttonNum = int.Parse(buttonNumber[1]);
+            int button_row = buttonNum / x;
+            int button_column = buttonNum % x;
 
             if (right_left == "Same")
             {
@@ -165,18 +349,59 @@ namespace MINESWEEPER
                 }
                 else
                 {
-                    button.Content = mineBackground[buttonNum / x][buttonNum % x] == 9 ? findMineImg : (object)mineBackground[buttonNum / x][buttonNum % x];
-                    button.IsEnabled = false;
+
+                    //첫 클릭이 지뢰일 경우 보드 새로 생성, while문을 통해 해당 버튼이 지뢰가 아닐때까지 반복
+                    while(mineBackground[button_row][button_column] == 9 && leftButtonCount == 0)
+                    {
+                        gameBoardCreate();
+                    }
+
+                    if(mineBackground[button_row][button_column] == 9)
+                    {
+                        button.Content = findMineImg;
+                        for(int i = 0; i < buttons.Count; i++)
+                        {
+                            buttons[i].IsEnabled = false;
+                        }
+                        MessageBox.Show("아쉽습니다.", "GameOver");
+                    }
+                    else
+                    {
+                        button.Content = mineBackground[button_row][button_column];
+                        leftButtonCount++;
+                        button.IsEnabled = false;
+
+                        if (CheckRound_MineCount(button_row, button_column) == 0)
+                        {
+                            ZeroRound(buttonNum);
+                        }
+                    }
                 }
                 
             }
             else if(right_left == "Right")
             {
-                button.Content = button.Content == null ? flagImg : null;
+                if(button.Content != flagImg)
+                {
+                    button.Content = flagImg;
+                    rightButtonCount++;
+                }
+                else
+                {
+                    button.Content = mineBackground[button_row][button_column];
+                    rightButtonCount++;
+                }
+            }
+            if(leftButtonCount == (x * y - mine))
+            {
+                for (int i = 0; i < buttons.Count; i++)
+                {
+                    buttons[i].IsEnabled = false;
+                }
+                MessageBox.Show("축하합니다.","WIN");
             }
             return;
         }
-
         //게임버튼 클릭시 좌클릭, 우클릭, 좌우 동시 클릭 동작 구분 및 동작에 따른 함수 연동
         private void GameButton_Click(object sender, MouseEventArgs e)
         {

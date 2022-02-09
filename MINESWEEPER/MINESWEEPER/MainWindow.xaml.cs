@@ -14,29 +14,31 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Controls.Primitives;
 using System.Text.RegularExpressions;
+using MahApps.Metro.Controls;
 
 namespace MINESWEEPER
 {
     /// <summary>
     /// MainWindow.xaml에 대한 상호 작용 논리
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : MetroWindow
     {
         //지뢰, 깃발 이미지 한번만 불러오도록 구성. 윈도우 생성자에서 한 번만 이미지 저장(상대경로)
         //파일 내부에 이미지 업로드하여 어느곳에서든 사용가능하게 구성
-        Image mineImg = new Image();
-        Image findMineImg = new Image();
-        Image flagImg = new Image();
+        private readonly Image mineImg = new Image();
+        private readonly Image findMineImg = new Image();
+        private readonly Image flagImg = new Image();
 
-        int x = 0;
-        int y = 0;
-        int mine = 0;
+        public int x = 0;
+        public int y = 0;
+        public int mine = 0;
 
-        int leftButtonCount = 0;
-        int rightButtonCount = 0;
+        public int leftButtonCount = 0;
+        public int rightButtonCount = 0;
 
-        List<List<int>> mineBackground = new List<List<int>>();
-        List<Button> buttons = new List<Button>();
+        //버튼과 백그라운드 숫자를 동일하게 List 한번으로 변경하는게 좋을듯
+        public List<List<int>> mineBackground = new List<List<int>>();
+        public List<Button> buttons = new List<Button>();
 
         public MainWindow()
         {
@@ -67,7 +69,6 @@ namespace MINESWEEPER
             {
                 for (int j = 0; j < y - 1; j++)
                 {
-                    //int rand_1 = random.Next(i, y - 1);
                     int rand_1 = random.Next(j + 1, y);
 
                     int temp = mineBackground[rand_1][i];
@@ -95,10 +96,11 @@ namespace MINESWEEPER
                     mineBackground[button_row][button_column] = mineBackground[button_row][button_column] == 9 ? 9 : CheckRound_MineCount(button_row, button_column);
                 }
             }
-            
             return;
         }
         //게임 보드 생성, 지뢰 생성 및 기본 보드 생성
+        //지뢰를 난수로 생성하기에는 사용자 설정으로 지뢰가 과하게 적거나 많은 경우 보드생성이 어려움
+        //지뢰(숫자9)를 초기에 생성하고 위치를 난수를 통해 변경하는 방식으로 보드 생성
         private void gameBoardCreate()
         {
             mineBackground.Clear();
@@ -133,13 +135,15 @@ namespace MINESWEEPER
             //지뢰 개수가 보드 크기와 같거나 많으면 오류메세지
             if (x * y <= mine || mine == 0)
             {
-                MessageBox.Show("지뢰개수를 확인해주세요..");
+                MessageBox.Show("지뢰개수를 확인해주세요.");
                 return;
             }
 
             int sizeX = x * 20;
             int sizeY = y * 20;
 
+            BoardData boardData = new BoardData(x, y, mine);
+            boardData.gameBoardCreate();
             //기본 보드 크기가 240x240이고 버튼하나당 20x20이므로 12개가 초과하면 창크기 및 버튼이 생성되는 grid 영역 조절
             //수량이 적을 경우 grid 크기를 조절하여 창의 중앙에 위치하도록 설정
             mainWindow.Width = y > 12 ? sizeX + 60 : 300;
@@ -151,6 +155,7 @@ namespace MINESWEEPER
             //동적 버튼 생성, 버튼의 크기 20x20 지정, 버튼 이름을 button_번호로 입력하여 해당 번호 사용
             //토글 버튼을 사용하여 시각화 높임, 2중 for문을 사용하여 행렬 방식 표시
             //PreviewMousecDown을 사용하여 좌클릭시 기본으로 사용되는 Click이벤트 충돌 방지
+            //함수로 변경하기
             for (int i = 0; i < y; i++)
             {
                 for(int j = 0; j < x; j++)
@@ -172,7 +177,7 @@ namespace MINESWEEPER
             return;
         }
 
-        //해당 버튼 주변 지뢰 개수 카운트
+        //해당 버튼 주변 지뢰 개수 카운트, 반복문으로 변경하기
         private int CheckRound_MineCount(int button_row, int button_column)
         {
             int mineCount = 0;
@@ -322,8 +327,10 @@ namespace MINESWEEPER
                     {
                         return;
                     }
-                    if(!(i == 0 && j == 0)) leftButtonCount++;
-                    buttons[buttonLocation].Content = CheckRound_MineCount(buttonRow, buttonColumn);
+                    if(!(i == 0 && j == 0) && buttons[buttonLocation].IsEnabled ==true) leftButtonCount++;
+
+                    int mineCount = CheckRound_MineCount(buttonRow, buttonColumn);
+                    if(mineCount != 0) buttons[buttonLocation].Content = mineCount;
                     buttons[buttonLocation].IsEnabled = false;
                 }
             }
@@ -349,7 +356,6 @@ namespace MINESWEEPER
                 }
                 else
                 {
-
                     //첫 클릭이 지뢰일 경우 보드 새로 생성, while문을 통해 해당 버튼이 지뢰가 아닐때까지 반복
                     while(mineBackground[button_row][button_column] == 9 && leftButtonCount == 0)
                     {
@@ -367,7 +373,7 @@ namespace MINESWEEPER
                     }
                     else
                     {
-                        button.Content = mineBackground[button_row][button_column];
+                        if(mineBackground[button_row][button_column] != 0) button.Content = mineBackground[button_row][button_column];
                         leftButtonCount++;
                         button.IsEnabled = false;
 
@@ -388,8 +394,8 @@ namespace MINESWEEPER
                 }
                 else
                 {
-                    button.Content = mineBackground[button_row][button_column];
-                    rightButtonCount++;
+                    button.Content = null;
+                    rightButtonCount--;
                 }
             }
             if(leftButtonCount == (x * y - mine))

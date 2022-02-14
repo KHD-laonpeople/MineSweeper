@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using System.Windows.Controls.Primitives;
 using System.Text.RegularExpressions;
 using MahApps.Metro.Controls;
+using BoardDatas;
 
 namespace MINESWEEPER
 {
@@ -143,7 +144,9 @@ namespace MINESWEEPER
             int sizeY = y * 20;
 
             BoardData boardData = new BoardData(x, y, mine);
-            boardData.gameBoardCreate();
+            boardData.GameBoardCreate();
+            bool[,] mineLocation = boardData.CreateMineLocations(x, y, mine);
+            int[,] mineCount = boardData.CreateMineMap(mineLocation);
             //기본 보드 크기가 240x240이고 버튼하나당 20x20이므로 12개가 초과하면 창크기 및 버튼이 생성되는 grid 영역 조절
             //수량이 적을 경우 grid 크기를 조절하여 창의 중앙에 위치하도록 설정
             mainWindow.Width = y > 12 ? sizeX + 60 : 300;

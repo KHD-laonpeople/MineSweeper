@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ButtonDatas;
 
 
-namespace MINESWEEPER
+namespace BoardDatas
 {
     class BoardData
     {
@@ -13,34 +14,27 @@ namespace MINESWEEPER
         private int y;
         private int mine;
         //다중 List로 변경, 행렬 이해에 편리
-        public List<ButtonData> buttonDatas = new List<ButtonData>();
+        public List<List<ButtonData>> buttonDatas = new List<List<ButtonData>>();
 
         public BoardData(int x, int y, int mine)
         {
             this.x = x;
             this.y = y;
             this.mine = mine;
-
-            for (int i = 0; i < x * y; i++)
-            {
-                buttonDatas.Add(new ButtonData(i));
-            }
         }
-        public void gameBoardCreate()
+        public void GameBoardCreate()
         {
-
             for (int i = 0; i < y; i++)
             {
+                List<ButtonData> button = new List<ButtonData>();
                 for (int j = 0; j < x; j++)
                 {
-                    buttonDatas[i * x + j].SetdataName(i * x + j);
-                    buttonDatas[j + i * x].SetMine(((j + i * x) < mine) ? true : false);
+                    button.Add(new ButtonData());
+                    button[j].SetdataName(j + i * x);
+                    button[j].SetMine((j + i * x) < mine);
                 }
+                buttonDatas.Add(button);
             }
-            MineSufle();
-        }
-        private void MineSufle()
-        {
             Random random = new Random();
             for (int i = 0; i < x; i++)
             {
@@ -48,34 +42,34 @@ namespace MINESWEEPER
                 {
                     int rand_1 = random.Next(j + 1, y);
 
-                    bool temp = buttonDatas[j *  x + i].GetMine();
-                    buttonDatas[j * x + i].SetMine(buttonDatas[rand_1 * x + i].GetMine());
-                    buttonDatas[rand_1 * x + i].SetMine(temp);
+                    bool temp = buttonDatas[j][i].GetMine();
+                    buttonDatas[j][i].SetMine(buttonDatas[rand_1][i].GetMine());
+                    buttonDatas[rand_1][i].SetMine(temp);
                 }
             }
             for (int i = 0; i < y; i++)
             {
                 for (int j = 0; j < x - 1; j++)
                 {
-                    int rand_1 = random.Next(j + 1, y);
+                    int rand_1 = random.Next(j + 1, x);
 
-                    bool temp = buttonDatas[j * x + i].GetMine();
-                    buttonDatas[j * x + i].SetMine(buttonDatas[rand_1 * x + i].GetMine());
-                    buttonDatas[rand_1 * x + i].SetMine(temp);
+                    bool temp = buttonDatas[i][j].GetMine();
+                    buttonDatas[i][j].SetMine(buttonDatas[i][rand_1].GetMine());
+                    buttonDatas[i][rand_1].SetMine(temp);
                 }
             }
             for (int i = 0; i < y; i++)
             {
                 for (int j = 0; j < x; j++)
                 {
-                    if (!buttonDatas[i * x + j].GetMine())
+                    if (!buttonDatas[i][j].GetMine())
                     {
-                        buttonDatas[i * x + j].SetRountMineCount(CheckRound_MineCount(i, j));
+                        buttonDatas[i][j].SetRountMineCount(CheckRound_MineCount(i, j));
                     }
                 }
             }
-            return;
         }
+
         private int CheckRound_MineCount(int row, int column)
         {
             int mineCount = 0;
@@ -135,10 +129,36 @@ namespace MINESWEEPER
                         continue;
                     }
 
-                    mineCount = buttonDatas[(row + i) * x + column + j].GetMine() ? mineCount + 1 : mineCount;
+                    mineCount = buttonDatas[row + i][column + j].GetMine() ? mineCount + 1 : mineCount;
                 }
             }
             return mineCount;
+        }
+
+        public bool[,] CreateMineLocations(int x, int y, int mine)
+        {
+            bool[,] mineLocation = new bool[y, x];
+            for(int i = 0; i < y; i++)
+            {
+                for(int j = 0; j < x; j++)
+                {
+                    mineLocation[i, j] = buttonDatas[i][j].GetMine();
+                }
+            }
+            return mineLocation;
+        }
+
+        public int[,] CreateMineMap(bool[,] mineLocations)
+        {
+            int[,] mineMap = new int[mineLocations.GetLength(0), mineLocations.Length / mineLocations.GetLength(0)];
+            for(int i = 0; i < y; i++)
+            {
+                for(int j = 0; j < x; j++)
+                {
+                    mineMap[i, j] = mineLocations[i,j] ? 0 : CheckRound_MineCount(i, j);
+                }
+            }
+            return mineMap;
         }
     }
 }

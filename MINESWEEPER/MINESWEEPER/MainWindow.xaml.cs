@@ -35,11 +35,9 @@ namespace MINESWEEPER
         public int mine = 0;
 
         public int leftButtonCount = 0;
-        public int rightButtonCount = 0;
 
-        //버튼과 백그라운드 숫자를 동일하게 List 한번으로 변경하는게 좋을듯
-        public List<List<int>> mineBackground = new List<List<int>>();
         public List<Button> buttons = new List<Button>();
+        private BoardData boardData = new BoardData();
 
         public MainWindow()
         {
@@ -52,78 +50,44 @@ namespace MINESWEEPER
             findMineImg.Stretch = Stretch.Uniform;
             flagImg.Stretch = Stretch.Uniform;
         }
-
         //텍스트박스 입력전 이벤트
         //입력한 텍스트가 숫자일 경우 regex(0~9)의 값과 일치하여 숫자 입력, 이외의 값은 차단
-        private void textBox_PreviewTextInput(Object sender, TextCompositionEventArgs e)
+        private void TextBox_PreviewTextInput(Object sender, TextCompositionEventArgs e)
         {
             Regex regex = new Regex("[^0-9]+");
             e.Handled = regex.IsMatch(e.Text);
             return;
         }
-
-        //지뢰 랜덤 위치 배정, 행 셔플 -> 열 셔플로 진행
-        private void MineSufle()
+        private void WindowSizeControl(int x, int y)
         {
-            Random random = new Random();
-            for (int i = 0; i < x; i++)
-            {
-                for (int j = 0; j < y - 1; j++)
-                {
-                    int rand_1 = random.Next(j + 1, y);
+            int sizeX = x * 20;
+            int sizeY = y * 20;
+            mainWindow.Width = y > 12 ? sizeX + 60 : 300;
+            mainWindow.Height = x > 12 ? sizeY + 120 : 360;
+            grid1.Children.Clear();
+            grid1.Width = sizeX;
+            grid1.Height = sizeY;
+            grid1.Margin = new Thickness(0, 0, 0, y <= 12 ? (Convert.ToInt32(mainWindow.Height) - sizeY - 80) / 2 : 20);
 
-                    int temp = mineBackground[rand_1][i];
-                    mineBackground[rand_1][i] = mineBackground[j][i];
-                    mineBackground[j][i] = temp;
-                }
-            }
             for (int i = 0; i < y; i++)
             {
-                for (int j = 0; j < x - 1; j++)
-                {
-                    int rand_2 = random.Next(j + 1, x);
-
-                    int temp = mineBackground[i][rand_2];
-                    mineBackground[i][rand_2] = mineBackground[i][j];
-                    mineBackground[i][j] = temp;
-                }
-            }
-            for(int i = 0; i < x; i++)
-            {
-                for(int j = 0; j < y; j++)
-                {
-                    int button_row = j % y;
-                    int button_column = i % x;
-                    mineBackground[button_row][button_column] = mineBackground[button_row][button_column] == 9 ? 9 : CheckRound_MineCount(button_row, button_column);
-                }
-            }
-            return;
-        }
-        //게임 보드 생성, 지뢰 생성 및 기본 보드 생성
-        //지뢰를 난수로 생성하기에는 사용자 설정으로 지뢰가 과하게 적거나 많은 경우 보드생성이 어려움
-        //지뢰(숫자9)를 초기에 생성하고 위치를 난수를 통해 변경하는 방식으로 보드 생성
-        private void gameBoardCreate()
-        {
-            mineBackground.Clear();
-            leftButtonCount = 0;
-            rightButtonCount = 0;
-            for (int i = 0; i < y; i++)
-            {
-                List<int> temp = new List<int>();
                 for (int j = 0; j < x; j++)
                 {
-                    temp.Add(j + i * x < mine ? 9 : 0);
+                    buttons.Add(new Button());
+                    buttons[i * x + j].Name = $"button_{i * x + j}";
+                    buttons[i * x + j].PreviewMouseDown += new MouseButtonEventHandler(GameButton_Click);
+
+                    grid1.Children.Add(buttons[i * x + j]);
                 }
-                mineBackground.Add(temp);
             }
-            MineSufle();
         }
         //보드 크기, 지뢰 개수를 입력받아 해당 게임보드 생성
         private void Button_GameStart(object sender, RoutedEventArgs e)
         {
             buttons.Clear();
+            leftButtonCount = 0;
             //텍스트가 비어있을 경우 오류메세지
-            if(boardX.Text == "" || boardY.Text == "" || mineEA.Text == "")
+            if (boardX.Text == "" || boardY.Text == "" || mineEA.Text == "")
             {
                 MessageBox.Show("입력값을 확인해주세요.");
                 return;
@@ -140,132 +104,14 @@ namespace MINESWEEPER
                 return;
             }
 
-            int sizeX = x * 20;
-            int sizeY = y * 20;
+            //생성 개수에 따른 윈도우 사이즈 변경
+            WindowSizeControl(x, y);
 
-            BoardData boardData = new BoardData(x, y, mine);
-            boardData.GameBoardCreate();
+            boardData.GameBoardCreate(x,y,mine);
             bool[,] mineLocation = boardData.CreateMineLocations(x, y, mine);
             int[,] mineCount = boardData.CreateMineMap(mineLocation);
-            //기본 보드 크기가 240x240이고 버튼하나당 20x20이므로 12개가 초과하면 창크기 및 버튼이 생성되는 grid 영역 조절
-            //수량이 적을 경우 grid 크기를 조절하여 창의 중앙에 위치하도록 설정
-            mainWindow.Width = y > 12 ? sizeX + 60 : 300;
-            mainWindow.Height = x > 12 ? sizeY + 120 : 360;
-            grid1.Width = sizeX;
-            grid1.Height = sizeY;
-            grid1.Margin = new Thickness(0, 0, 0, y <= 12 ? (Convert.ToInt32(mainWindow.Height) - sizeY - 80) / 2 : 20);
 
-            //동적 버튼 생성, 버튼의 크기 20x20 지정, 버튼 이름을 button_번호로 입력하여 해당 번호 사용
-            //토글 버튼을 사용하여 시각화 높임, 2중 for문을 사용하여 행렬 방식 표시
-            //PreviewMousecDown을 사용하여 좌클릭시 기본으로 사용되는 Click이벤트 충돌 방지
-            //함수로 변경하기
-            for (int i = 0; i < y; i++)
-            {
-                for(int j = 0; j < x; j++)
-                {
-                    buttons.Add(new Button());
-                    buttons[i * x + j].Name = $"button_{i * x + j}";
-                    buttons[i * x + j].Height = 20;
-                    buttons[i * x + j].Width = 20;
-                    buttons[i * x + j].HorizontalAlignment = HorizontalAlignment.Left;
-                    buttons[i * x + j].VerticalAlignment = VerticalAlignment.Top;
-                    buttons[i * x + j].Margin = new Thickness(buttons[i * x + j].Width * j, buttons[i * x + j].Height * i, 0, 0);
-                    buttons[i * x + j].PreviewMouseDown += new MouseButtonEventHandler(GameButton_Click);
-
-                    grid1.Children.Add(buttons[i * x + j]);
-                }
-            }
-            //보드 생성 및 버튼 연동
-            gameBoardCreate();
             return;
-        }
-
-        //해당 버튼 주변 지뢰 개수 카운트, 반복문으로 변경하기
-        private int CheckRound_MineCount(int button_row, int button_column)
-        {
-            int mineCount = 0;
-            if (mineBackground[button_row][button_column] == 9) return 9;
-
-            if (button_row != 0 && button_column != 0 && button_row != (y - 1) && button_column != (x - 1))
-            {
-                mineCount = mineBackground[button_row - 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row - 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row + 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row + 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-            }
-            else if (button_row == 0 && button_column == 0)
-            {
-                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row + 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-            }
-            else if (button_row == (y - 1) && button_column == (x - 1))
-            {
-                mineCount = mineBackground[button_row - 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-            }
-            else if (button_row == 0 && button_column == (x - 1))
-            {
-                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row + 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
-            }
-            else if (button_row == (y - 1) && button_column == 0)
-            {
-                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row - 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-            }
-            else if (button_row == 0)
-            {
-                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row + 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row + 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-            }
-            else if (button_column == 0)
-            {
-                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row - 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row + 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-            }
-            else if (button_row == (y - 1))
-            {
-                mineCount = mineBackground[button_row - 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row - 1][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row][button_column + 1] == 9 ? mineCount + 1 : mineCount;
-            }
-            else
-            {
-                mineCount = mineBackground[button_row - 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row - 1][button_column] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-
-                mineCount = mineBackground[button_row + 1][button_column - 1] == 9 ? mineCount + 1 : mineCount;
-                mineCount = mineBackground[button_row + 1][button_column] == 9 ? mineCount + 1 : mineCount;
-            }
-            return mineCount;
         }
 
         private void ZeroRound(int buttonNum)
@@ -330,11 +176,11 @@ namespace MINESWEEPER
                     {
                         return;
                     }
-                    if(!(i == 0 && j == 0) && buttons[buttonLocation].IsEnabled ==true) leftButtonCount++;
+                    if(!(i == 0 && j == 0) && buttons[buttonLocation].Content == null) leftButtonCount++;
 
-                    int mineCount = CheckRound_MineCount(buttonRow, buttonColumn);
-                    if(mineCount != 0) buttons[buttonLocation].Content = mineCount;
-                    buttons[buttonLocation].IsEnabled = false;
+                    int mineCount = boardData.buttonDatas[buttonRow][buttonColumn].GetRoundMineCount();
+                    buttons[buttonLocation].Content = mineCount;
+                    //buttons[buttonLocation].IsEnabled = false;
                 }
             }
         }
@@ -349,7 +195,8 @@ namespace MINESWEEPER
 
             if (right_left == "Same")
             {
-
+                //주변이 지뢰, 깃발이 아니면 모두 IsEnabled = true
+                //IsEnabled = true로 할 경우 same 기능 불가능 - 색상 변경으로 바꿔야할듯
             }
             else if(right_left == "Left")
             {
@@ -360,12 +207,12 @@ namespace MINESWEEPER
                 else
                 {
                     //첫 클릭이 지뢰일 경우 보드 새로 생성, while문을 통해 해당 버튼이 지뢰가 아닐때까지 반복
-                    while(mineBackground[button_row][button_column] == 9 && leftButtonCount == 0)
+                    while(boardData.buttonDatas[button_row][button_column].GetMine() && leftButtonCount == 0)
                     {
-                        gameBoardCreate();
+                        boardData.GameBoardCreate(x,y,mine);
                     }
-
-                    if(mineBackground[button_row][button_column] == 9)
+                    //지뢰일 경우
+                    if(boardData.buttonDatas[button_row][button_column].GetMine())
                     {
                         button.Content = findMineImg;
                         for(int i = 0; i < buttons.Count; i++)
@@ -374,13 +221,13 @@ namespace MINESWEEPER
                         }
                         MessageBox.Show("아쉽습니다.", "GameOver");
                     }
+                    //지뢰가 아닐 경우
                     else
                     {
-                        if(mineBackground[button_row][button_column] != 0) button.Content = mineBackground[button_row][button_column];
-                        leftButtonCount++;
-                        button.IsEnabled = false;
+                        if (button.Content == null) leftButtonCount++;
+                        button.Content = boardData.buttonDatas[button_row][button_column].GetRoundMineCount();
 
-                        if (CheckRound_MineCount(button_row, button_column) == 0)
+                        if (boardData.buttonDatas[button_row][button_column].GetRoundMineCount() == 0)
                         {
                             ZeroRound(buttonNum);
                         }
@@ -393,12 +240,10 @@ namespace MINESWEEPER
                 if(button.Content != flagImg)
                 {
                     button.Content = flagImg;
-                    rightButtonCount++;
                 }
                 else
                 {
                     button.Content = null;
-                    rightButtonCount--;
                 }
             }
             if(leftButtonCount == (x * y - mine))

@@ -35,7 +35,7 @@ namespace ButtonDatas
         {
             this.dataName = dataName;
         }
-        public void SetRountMineCount(int roundMineCount)
+        public void SetRoundMineCount(int roundMineCount)
         {
             this.roundMineCount = roundMineCount;
         }
@@ -51,7 +51,7 @@ namespace ButtonDatas
         {
             return dataName;
         }
-        public int GetRountMineCount()
+        public int GetRoundMineCount()
         {
             return roundMineCount;
         }

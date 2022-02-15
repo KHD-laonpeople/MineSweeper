@@ -8,22 +8,30 @@ using ButtonDatas;
 
 namespace BoardDatas
 {
-    class BoardData
+    class BoardData : ButtonData
     {
         private int x;
         private int y;
         private int mine;
-        //다중 List로 변경, 행렬 이해에 편리
+
         public List<List<ButtonData>> buttonDatas = new List<List<ButtonData>>();
 
-        public BoardData(int x, int y, int mine)
+        public BoardData()
+        { }
+            public BoardData(int x, int y, int mine)
         {
             this.x = x;
             this.y = y;
             this.mine = mine;
         }
-        public void GameBoardCreate()
+        public void GameBoardCreate(int x, int y, int mine)
         {
+            this.x = x;
+            this.y = y;
+            this.mine = mine;
+
+            buttonDatas.Clear();
+
             for (int i = 0; i < y; i++)
             {
                 List<ButtonData> button = new List<ButtonData>();
@@ -64,7 +72,7 @@ namespace BoardDatas
                 {
                     if (!buttonDatas[i][j].GetMine())
                     {
-                        buttonDatas[i][j].SetRountMineCount(CheckRound_MineCount(i, j));
+                        buttonDatas[i][j].SetRoundMineCount(CheckRound_MineCount(i, j));
                     }
                 }
             }

@@ -16,6 +16,8 @@ using System.Windows.Controls.Primitives;
 using System.Text.RegularExpressions;
 using MahApps.Metro.Controls;
 using BoardDatas;
+using System.Windows.Threading;
+using System.IO;
 
 namespace MINESWEEPER
 {
@@ -33,10 +35,12 @@ namespace MINESWEEPER
         public int x = 0;
         public int y = 0;
         public int mine = 0;
+        public int time = 0;
+        public DispatcherTimer timer = new DispatcherTimer();
 
         public int leftButtonCount = 0;
 
-        public List<Button> buttons = new List<Button>();
+        public List<List<Button>> buttons = new List<List<Button>>();
         private BoardData boardData = new BoardData();
 
         public MainWindow()
@@ -69,16 +73,20 @@ namespace MINESWEEPER
             grid1.Height = sizeY;
             grid1.Margin = new Thickness(0, 0, 0, y <= 12 ? (Convert.ToInt32(mainWindow.Height) - sizeY - 80) / 2 : 20);
 
-            for (int i = 0; i < y; i++)
+            for(int i = 0; i < y; i++)
             {
-                for (int j = 0; j < x; j++)
-                {
-                    buttons.Add(new Button());
-                    buttons[i * x + j].Name = $"button_{i * x + j}";
-                    buttons[i * x + j].PreviewMouseDown += new MouseButtonEventHandler(GameButton_Click);
+                buttons.Add(new List<Button>());
+            }
 
-                    grid1.Children.Add(buttons[i * x + j]);
-                }
+            for (int i = 0; i < x * y; i++)
+            {
+                int row = i / x;
+                int column = i % x;
+                buttons[row].Add(new Button());
+                buttons[row][column].Name = $"button_{i}";
+                buttons[row][column].PreviewMouseDown += new MouseButtonEventHandler(GameButton_Click);
+
+                grid1.Children.Add(buttons[row][column]);
             }
         }
         //보드 크기, 지뢰 개수를 입력받아 해당 게임보드 생성
@@ -86,6 +94,7 @@ namespace MINESWEEPER
         {
             buttons.Clear();
             leftButtonCount = 0;
+            time = 0;
             //텍스트가 비어있을 경우 오류메세지
             if (boardX.Text == "" || boardY.Text == "" || mineEA.Text == "")
             {
@@ -97,6 +106,7 @@ namespace MINESWEEPER
             y = int.Parse(boardY.Text);
             mine = int.Parse(mineEA.Text);
 
+            //Top5Load(x, y, mine, time);
             //지뢰 개수가 보드 크기와 같거나 많으면 오류메세지
             if (x * y <= mine || mine == 0)
             {
@@ -109,78 +119,42 @@ namespace MINESWEEPER
 
             boardData.GameBoardCreate(x,y,mine);
             bool[,] mineLocation = boardData.CreateMineLocations(x, y, mine);
-            int[,] mineCount = boardData.CreateMineMap(mineLocation);
+            int[,] mineMap = boardData.CreateMineMap(mineLocation);
 
+            
+            timer.Interval = TimeSpan.FromSeconds(1);
+            timer.Tick += new EventHandler(Timer_Tick);
+            timer.Start();
             return;
         }
+        
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            time++;
+            LBtimer.Content = $"{time / 3600:D2}:{time / 60:D2}:{time % 60:D2}";
 
+        }
+        
         private void ZeroRound(int buttonNum)
         {
-            int buttonRowOrigin = buttonNum / x;
-            int buttonColumnOrigin = buttonNum % x;
-            for (int i = -1; i < 2; i++)
+            for (int i = 0; i < 9; i++)
             {
-                for(int j = -1; j < 2; j++)
+                int buttonRow = (buttonNum / x) + (i / 3) - 1;
+                int buttonColumn = (buttonNum % x) + (i % 3) - 1;
+                try
                 {
-                    int buttonLocation = buttonNum + (i * x) + j;
-                    int buttonRow = buttonLocation / x;
-                    int buttonColumn = buttonLocation % x;
-
-                    if (buttonRowOrigin > 0 && buttonColumnOrigin > 0 && buttonRowOrigin < (y - 1) && buttonColumnOrigin < (x - 1))
-                    {}
-                    //좌측상단 클릭시
-                    else if (buttonRowOrigin == 0 && buttonColumnOrigin == 0)
-                    {
-                        if (i < 0 || j < 0) continue;
-                    }
-                    //우측하단 클릭시
-                    else if (buttonRowOrigin == (y - 1) && buttonColumnOrigin == (x - 1))
-                    {
-                        if (i > 0 || j > 0) continue;
-                    }
-                    //우측상단 클릭시
-                    else if (buttonRowOrigin == 0 && buttonColumnOrigin == (x - 1))
-                    {
-                        if (i < 0 || j > 0) continue;
-                    }
-                    //좌측하단 클릭시
-                    else if (buttonRowOrigin == (y - 1) && buttonColumnOrigin == 0)
-                    {
-                        if (i > 0 || j < 0) continue;
-                    }
-                    //상단면 클릭시
-                    else if (buttonRowOrigin == 0 && buttonColumnOrigin > 0)
-                    {
-                        if (i < 0) continue;
-                    }
-                    //하단면 클릭시
-                    else if (buttonRowOrigin == (y - 1) && buttonColumnOrigin > 0)
-                    {
-                        if (i > 0) continue;
-                    }
-                    //우측면 클릭시
-                    else if (buttonRowOrigin > 0 && buttonColumnOrigin == 0)
-                    {
-                        if (j < 0) continue;
-                    }
-                    //좌측면 클릭시
-                    else if (buttonRowOrigin > 0 && buttonColumnOrigin == (x - 1))
-                    {
-                        if (j > 0) continue;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                    if(buttons[buttonLocation].Content == flagImg)
+                    if (buttons[buttonRow][buttonColumn].Content == flagImg || boardData.buttonDatas[buttonRow][buttonColumn].GetMine())
                     {
                         return;
                     }
-                    if(!(i == 0 && j == 0) && buttons[buttonLocation].Content == null) leftButtonCount++;
+                    if (!(i == 4) && buttons[buttonRow][buttonColumn].Content == null) leftButtonCount++;
 
                     int mineCount = boardData.buttonDatas[buttonRow][buttonColumn].GetRoundMineCount();
-                    buttons[buttonLocation].Content = mineCount;
-                    //buttons[buttonLocation].IsEnabled = false;
+                    buttons[buttonRow][buttonColumn].Content = mineCount;
+                }
+                catch
+                {
+                    continue;
                 }
             }
         }
@@ -215,9 +189,9 @@ namespace MINESWEEPER
                     if(boardData.buttonDatas[button_row][button_column].GetMine())
                     {
                         button.Content = findMineImg;
-                        for(int i = 0; i < buttons.Count; i++)
+                        for(int i = 0; i < buttons.Count * buttons[0].Count; i++)
                         {
-                            buttons[i].IsEnabled = false;
+                            buttons[i / x][i % x].IsEnabled = false;
                         }
                         MessageBox.Show("아쉽습니다.", "GameOver");
                     }
@@ -237,24 +211,44 @@ namespace MINESWEEPER
             }
             else if(right_left == "Right")
             {
-                if(button.Content != flagImg)
-                {
-                    button.Content = flagImg;
-                }
-                else
-                {
-                    button.Content = null;
-                }
+                button.Content = button.Content != flagImg ? flagImg : null;
             }
             if(leftButtonCount == (x * y - mine))
             {
-                for (int i = 0; i < buttons.Count; i++)
+                timer.Stop();
+                for (int i = 0; i < buttons.Count * buttons[0].Count; i++)
                 {
-                    buttons[i].IsEnabled = false;
+                    buttons[i / x][i % x].IsEnabled = false;
                 }
                 MessageBox.Show("축하합니다.","WIN");
             }
             return;
+        }
+
+        //추가 수정 진행중
+        //Top5 저장을 위해 데이터 로드 후 비교 및 새로 저장할 데이터 반환
+        private string[] Top5Load(int x, int y, int mine, int time)
+        {
+            var reader = new StreamReader(File.OpenRead(@"List.csv"));
+            int score = (x * y * mine) - (time * 2);
+            string[] saveList = new string[5];
+            string tmp;
+            int lineNum = 0;
+            while(!reader.EndOfStream)
+            {
+                var line = reader.ReadLine();
+                var text = line.Split(',');
+
+                if(int.Parse(text[1]) < score)
+                {
+                    saveList[lineNum++] = $"player,{score},{x}x{y}/{mine}";
+                    score = int.Parse(text[1]);
+                    tmp = line;
+                }
+                saveList[lineNum] = line;
+                lineNum++;
+            }
+            return saveList;
         }
         //게임버튼 클릭시 좌클릭, 우클릭, 좌우 동시 클릭 동작 구분 및 동작에 따른 함수 연동
         private void GameButton_Click(object sender, MouseEventArgs e)
@@ -271,7 +265,6 @@ namespace MINESWEEPER
             {
                 FindMine(sender, "Left");
             }
-
             return;
         }
     }

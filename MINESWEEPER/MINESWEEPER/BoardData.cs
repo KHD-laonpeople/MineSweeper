@@ -1,9 +1,7 @@
-﻿using System;
+﻿using ButtonDatas;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ButtonDatas;
 
 
 namespace BoardDatas
@@ -18,7 +16,7 @@ namespace BoardDatas
 
         public BoardData()
         { }
-            public BoardData(int x, int y, int mine)
+        public BoardData(int x, int y, int mine)
         {
             this.x = x;
             this.y = y;
@@ -81,63 +79,18 @@ namespace BoardDatas
         private int CheckRound_MineCount(int row, int column)
         {
             int mineCount = 0;
-            for(int i = -1; i < 2; i++)
+            for (int i = 0; i < 9; i++)
             {
-                for(int j = -1; j < 2; j++)
+                int roundRow = row + (i / 3) - 1;
+                int roundColumn = column + (i % 3) - 1;
+                try
                 {
-                    if (row > 0 && column > 0 && row < (y - 1) && column < (x - 1))
-                    {
-                        if (i == 0 && j == 0)
-                        {
-                            continue;
-                        }
-                    }
-                    //좌측상단 클릭시
-                    else if (row == 0 && column == 0)
-                    {
-                        if (i < 0 || j < 0) continue;
-                    }
-                    //우측하단 클릭시
-                    else if (row == (y - 1) && column == (x - 1))
-                    {
-                        if (i > 0 || j > 0) continue;
-                    }
-                    //우측상단 클릭시
-                    else if (row == 0 && column == (x - 1))
-                    {
-                        if (i < 0 || j > 0) continue;
-                    }
-                    //좌측하단 클릭시
-                    else if (row == (y - 1) && column == 0)
-                    {
-                        if (i > 0 || j < 0) continue;
-                    }
-                    //상단면 클릭시
-                    else if (row == 0 && column > 0)
-                    {
-                        if (i < 0) continue;
-                    }
-                    //하단면 클릭시
-                    else if (row == (y - 1) && column > 0)
-                    {
-                        if (i > 0) continue;
-                    }
-                    //우측면 클릭시
-                    else if (row > 0 && column == 0)
-                    {
-                        if (j < 0) continue;
-                    }
-                    //좌측면 클릭시
-                    else if (row > 0 && column == (x - 1))
-                    {
-                        if (j > 0) continue;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-
-                    mineCount = buttonDatas[row + i][column + j].GetMine() ? mineCount + 1 : mineCount;
+                    if (i == 4) continue;
+                    mineCount = buttonDatas[roundRow][roundColumn].GetMine() ? mineCount + 1 : mineCount;
+                }
+                catch
+                {
+                    continue;
                 }
             }
             return mineCount;
@@ -145,26 +98,56 @@ namespace BoardDatas
 
         public bool[,] CreateMineLocations(int x, int y, int mine)
         {
-            bool[,] mineLocation = new bool[y, x];
-            for(int i = 0; i < y; i++)
+            int count = 0;
+            if (x < 0 || y < 0 || mine < 0)
             {
-                for(int j = 0; j < x; j++)
-                {
-                    mineLocation[i, j] = buttonDatas[i][j].GetMine();
-                }
+                bool[,] error = new bool[0, 0];
+                return error;
             }
+            bool[,] mineLocation = new bool[y, x];
+
+            bool[] tmp = new bool[mineLocation.Length];
+            Random rnd = new Random();
+            do
+            {
+                tmp[rnd.Next(0, tmp.Length)] = true;
+                count++;
+            } while (tmp.Count(g => g) < mine);
+            Buffer.BlockCopy(tmp, 0, mineLocation, 0, tmp.Length);
+
+            int test = count;
             return mineLocation;
         }
 
         public int[,] CreateMineMap(bool[,] mineLocations)
         {
-            int[,] mineMap = new int[mineLocations.GetLength(0), mineLocations.Length / mineLocations.GetLength(0)];
-            for(int i = 0; i < y; i++)
+            int row = mineLocations.Length / mineLocations.GetLength(0);
+            int column =  mineLocations.GetLength(0);
+            int[,] mineMap = new int[column, row];
+
+            int count = 0;
+            while (count != mineMap.Length)
             {
-                for(int j = 0; j < x; j++)
+                int mineCount = 0;
+                if (!mineLocations[count / row, count % row])
                 {
-                    mineMap[i, j] = mineLocations[i,j] ? 0 : CheckRound_MineCount(i, j);
+                    for (int i = 0; i < 9; i++)
+                    {
+                        int roundRow = (i / 3) - 1;
+                        int roundColumn = (i % 3) - 1;
+                        try
+                        {
+                            if (i == 4) continue;
+                            mineCount = mineLocations[roundRow, roundColumn] ? mineCount + 1 : mineCount;
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+                    }
                 }
+                mineMap[count / row, count % row] = mineCount;
+                count++;
             }
             return mineMap;
         }

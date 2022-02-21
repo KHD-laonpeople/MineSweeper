@@ -66,8 +66,8 @@ namespace MINESWEEPER
         {
             int sizeX = x * 20;
             int sizeY = y * 20;
-            mainWindow.Width = y > 12 ? sizeX + 60 : 300;
-            mainWindow.Height = x > 12 ? sizeY + 120 : 360;
+            mainWindow.Width = y > 12 ? sizeX + 120 : mainWindow.Width;
+            mainWindow.Height = x > 12 ? sizeY + 120 : mainWindow.Height;
             grid1.Children.Clear();
             grid1.Width = sizeX;
             grid1.Height = sizeY;
@@ -106,9 +106,8 @@ namespace MINESWEEPER
             y = int.Parse(boardY.Text);
             mine = int.Parse(mineEA.Text);
 
-            //Top5Load(x, y, mine, time);
             //지뢰 개수가 보드 크기와 같거나 많으면 오류메세지
-            if (x * y <= mine || mine == 0)
+            if ((x * y - 1) <= mine || mine == 0)
             {
                 MessageBox.Show("지뢰개수를 확인해주세요.");
                 return;
@@ -130,8 +129,11 @@ namespace MINESWEEPER
         
         private void Timer_Tick(object sender, EventArgs e)
         {
-            time++;
-            LBtimer.Content = $"{time / 3600:D2}:{time / 60:D2}:{time % 60:D2}";
+            if (leftButtonCount != mine)
+            {
+                time++;
+                LBtimer.Content = $"{time / 3600:D2}:{time / 60:D2}:{time % 60:D2}";
+            }
 
         }
         
@@ -220,36 +222,51 @@ namespace MINESWEEPER
                 {
                     buttons[i / x][i % x].IsEnabled = false;
                 }
-                MessageBox.Show("축하합니다.","WIN");
+                string rank = Top5SaveLoad(x, y, mine, time);
+                string[] top = rank.Split('\n');
+                MessageBox.Show($"축하합니다.\nRanking : Name / Score / Map\nTop1 : {top[0]}\nTop2 : {top[1]}\nTop3 : {top[2]}\nTop4 : {top[3]}\nTop5 : {top[4]}","WIN");
             }
             return;
         }
 
-        //추가 수정 진행중
-        //Top5 저장을 위해 데이터 로드 후 비교 및 새로 저장할 데이터 반환
-        private string[] Top5Load(int x, int y, int mine, int time)
+        private string Top5SaveLoad(int x, int y, int mine, int time)
         {
             var reader = new StreamReader(File.OpenRead(@"List.csv"));
             int score = (x * y * mine) - (time * 2);
-            string[] saveList = new string[5];
-            string tmp;
-            int lineNum = 0;
+            string[] lastScore = { "0", "0", "0" };
+            string saveList = null;
+            //랭킹 갱신 기능 추가 작업 필요, 같은값이 여러번 입력되는 오류 존재
             while(!reader.EndOfStream)
             {
                 var line = reader.ReadLine();
-                var text = line.Split(',');
+                var text = line != "" ? line.Split(',') : new string[] { "0", "0", "0" };
 
-                if(int.Parse(text[1]) < score)
+                
+                if (int.Parse(text[1]) <= score)
                 {
-                    saveList[lineNum++] = $"player,{score},{x}x{y}/{mine}";
-                    score = int.Parse(text[1]);
-                    tmp = line;
+                    saveList += $"{playerName.Text},{score},{x}x{y}/{mine}\n";
+                    score = 0;
+                    lastScore = text;
                 }
-                saveList[lineNum] = line;
-                lineNum++;
+                else if (int.Parse(text[1]) < int.Parse(lastScore[1]))
+                {
+                    saveList += $"{lastScore[0]},{lastScore[1]},{lastScore[2]}\n";
+                    lastScore = text;
+                }
+                else if (int.Parse(lastScore[1]) < int.Parse(text[1]))
+                {
+                    saveList += $"{text[0]},{text[1]},{text[2]}\n";
+                }
+            }
+            reader.Close();
+
+            using (StreamWriter file = new StreamWriter(@"List.csv"))
+            {
+                file.Write(saveList);
             }
             return saveList;
         }
+
         //게임버튼 클릭시 좌클릭, 우클릭, 좌우 동시 클릭 동작 구분 및 동작에 따른 함수 연동
         private void GameButton_Click(object sender, MouseEventArgs e)
         {

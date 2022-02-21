@@ -87,12 +87,13 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\IMineData.cs" />
     <Compile Include="Data\MineData.cs" />
+    <Compile Include="Data\MineData2nd.cs" />
     <Compile Include="Main.xaml.cs">
       <DependentUpon>Main.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainViewModel.cs" />
-    <Compile Include="Manager\MineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -124,6 +125,12 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\MineKit\MineKit.csproj">
+      <Project>{b0d141b1-a545-41f2-9f7f-3be7e3a6e3b7}</Project>
+      <Name>MineKit</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

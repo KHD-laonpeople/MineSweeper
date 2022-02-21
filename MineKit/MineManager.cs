@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MINESWEEPER.Manager
+namespace MineKit
 {
     public static class MineManager
-    {
+    {        
         public static bool[,] CreateMineLocations(int x, int y, int mine)
         {
             bool[,] mines = new bool[y, x];
@@ -34,20 +34,23 @@ namespace MINESWEEPER.Manager
                 for(int y=0;y<height;y++)
                 {
                     var mineCount = 0;
-                    // -1 <= x <= 1 & -1 <= y <= 1
-                    
-                    for(int x1 = (x-1 < 0 ? 0 : x-1); x1 <= (width-1  <= x + 1 ? width-1 : x + 1) ; x1++)
-                    {
-                        for (int y1 = (y - 1 < 0 ? 0 : y - 1); y1 <= (height-1 <= y +1 ? height-1 : y + 1); y1++)
-                        {
-                            mineCount += mineLocations[x1, y1] ? 1 : 0;
-                        }
-                    }
+                    // -1 <= x <= 1 & -1 <= y <= 1                    
+                    DoWorkNearMine(x,y,width,height, (a, b) => { mineCount += mineLocations[a, b] ? 1 : 0; });
                     mineMap[x, y] = mineCount;
                 }
             }
 
             return mineMap;
+        }
+        public static void DoWorkNearMine(int x, int y, int width, int height, Action<int, int> action)
+        {
+            for (int x1 = (x - 1 < 0 ? 0 : x - 1); x1 <= (width - 1 <= x + 1 ? width - 1 : x + 1); x1++)
+            {
+                for (int y1 = (y - 1 < 0 ? 0 : y - 1); y1 <= (height - 1 <= y + 1 ? height - 1 : y + 1); y1++)
+                {
+                    action(x1, y1);
+                }
+            }
         }
     }
 }

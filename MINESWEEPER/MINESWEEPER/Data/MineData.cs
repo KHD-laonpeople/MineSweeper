@@ -8,7 +8,7 @@ using System.Windows.Media;
 
 namespace MINESWEEPER.Data
 {
-    public class MineData: ReactiveObject
+    public class MineData: ReactiveObject,IMineData
     {        
         public bool IsCrashed()
         {
@@ -17,6 +17,18 @@ namespace MINESWEEPER.Data
         public void Open()
         {
             IsOpend = true;
+        }
+        public void Check()
+        {
+            IsChecked = true;
+        }
+        public void Uncheck()
+        {
+            IsChecked = false;
+        }
+        public void ToggleCheck()
+        {
+            IsChecked = !IsChecked;
         }
         public int X { get; set; }
         public int Y { get; set; }
@@ -68,10 +80,11 @@ namespace MINESWEEPER.Data
                     if (IsMine)
                         return "*";
                     else
-                        return NearMineCount.ToString();
+                        return NearMineCount > 0 ? NearMineCount.ToString() : string.Empty;
                     
                 }
             }
         }
+
     }
 }

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <RootNamespace>Test_Minesweeper</RootNamespace>
 
     <IsPackable>false</IsPackable>
@@ -9,6 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
+    <PackageReference Include="ReactiveUI" Version="17.1.50" />
+    <PackageReference Include="ReactiveUI.WPF" Version="17.1.50" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -22,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MineKit\MineKit.csproj" />
+    <ProjectReference Include="..\MINESWEEPER\MINESWEEPER\MINESWEEPER.csproj" />
   </ItemGroup>
 
 </Project>

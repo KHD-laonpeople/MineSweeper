@@ -10,20 +10,25 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Controls.Primitives;
 using System.Text.RegularExpressions;
 using MahApps.Metro.Controls;
 using BoardDatas;
 using System.Windows.Threading;
 using System.IO;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace MINESWEEPER
 {
     /// <summary>
     /// MainWindow.xaml에 대한 상호 작용 논리
     /// </summary>
+    public class JsonData
+    {
+        public string name { get; set; }
+        public int score { get; set; }
+        public string map { get; set; }
+    }
     public partial class MainWindow : MetroWindow
     {
         //지뢰, 깃발 이미지 한번만 불러오도록 구성. 윈도우 생성자에서 한 번만 이미지 저장(상대경로)
@@ -46,9 +51,9 @@ namespace MINESWEEPER
         public MainWindow()
         {
             InitializeComponent();
-            mineImg.Source = new BitmapImage(new Uri(@"\bin\Debug\mine.png", UriKind.Relative));
-            findMineImg.Source = new BitmapImage(new Uri(@"\bin\Debug\findMine.png", UriKind.Relative));
-            flagImg.Source = new BitmapImage(new Uri(@"\bin\Debug\flag.png", UriKind.Relative));
+            mineImg.Source = new BitmapImage(new Uri(@"\images\mine.png", UriKind.Relative));
+            findMineImg.Source = new BitmapImage(new Uri(@"\images\findMine.png", UriKind.Relative));
+            flagImg.Source = new BitmapImage(new Uri(@"\images\flag.png", UriKind.Relative));
             
             mineImg.Stretch = Stretch.Uniform;
             findMineImg.Stretch = Stretch.Uniform;
@@ -136,7 +141,6 @@ namespace MINESWEEPER
             }
 
         }
-        
         private void ZeroRound(int buttonNum)
         {
             for (int i = 0; i < 9; i++)
@@ -222,48 +226,71 @@ namespace MINESWEEPER
                 {
                     buttons[i / x][i % x].IsEnabled = false;
                 }
-                string oldRank = Top5SaveLoad(x, y, mine, time);
-                string[] top = oldRank.Split('\n');
-                MessageBox.Show($"축하합니다.\nRanking : Name / Score / Map\nTop1 : {top[0]}\nTop2 : {top[1]}\nTop3 : {top[2]}\nTop4 : {top[3]}\nTop5 : {top[4]}","WIN");
+                JArray oldRank = ClearMemberSave(ClearMemberLoad());
+                string message = $"축하합니다.\nRanking : Name / Score / Map\n";
+                int count = 0;
+                foreach(JObject n in oldRank)
+                {
+                    count++;
+                    message += $"TOP{count} : {n["name"]}, {n["score"]}, {n["map"]}\n";
+                    if (count > 5) break;
+                }
+                MessageBox.Show(message, "WIN");
             }
             return;
         }
-        private string Top5SaveLoad(int x, int y, int mine, int time)
+        private JArray ClearMemberLoad()
         {
-            var reader = new StreamReader(File.OpenRead(@"..\..\..\List.csv"));
-            int score = (x * y * mine) - (time * 2);
-            string[] lastScore = { "0", "0", "0" };
-            string saveList = null;
-            while(!reader.EndOfStream)
-            {
-                var line = reader.ReadLine();
-                var text = line != "" ? line.Split(',') : new string[] { "0", "0", "0" };
-                
-                if (int.Parse(text[1]) <= score)
-                {
-                    saveList += $"{playerName.Text},{score},{x}x{y}/{mine}\n";
-                    score = 0;
-                    lastScore = text;
-                }
-                else if (int.Parse(text[1]) <= int.Parse(lastScore[1]))
-                {
-                    saveList += $"{lastScore[0]},{lastScore[1]},{lastScore[2]}\n";
-                    lastScore = text;
-                }
-                else if (int.Parse(lastScore[1]) < int.Parse(text[1]))
-                {
-                    saveList += $"{text[0]},{text[1]},{text[2]}\n";
-                }
-            }
-            reader.Close();
+            string jsonPath = @"Data\ClearMemberList.json";
 
-            using (StreamWriter file = new StreamWriter(@"..\..\..\List.csv"))
+            if(!File.Exists(jsonPath))
             {
-                file.Write(saveList);
+                using (File.Create(jsonPath))
+                {
+                    return new JArray();
+                }
             }
-            return saveList;
+
+            using(StreamReader file = File.OpenText(jsonPath))
+            using(JsonTextReader reader = new JsonTextReader(file))
+            {
+                JArray json = (JArray)JToken.ReadFrom(reader);
+                return json;
+            }
         }
+        private JArray SortClearMember(JArray clearMemberList)
+        {
+            JArray jsonSort = new JArray(clearMemberList.OrderByDescending(obj => obj["score"]));
+            return jsonSort;
+        }
+        private JArray ClearMemberSave(JArray clearMemberList)
+        { 
+            int score = (x * y * mine) - (time * 2);
+            JArray json = new JArray();
 
+            if (clearMemberList == new JArray())
+            {
+                json = JArray.Parse("name : \"Player ID\", scoer : \"Game Score\", map : \"GameBoard Size/Mine Count\"");
+            }
+            else
+            {
+                json = clearMemberList;
+            }
+            JObject newMember = new JObject
+            {
+                { "name", playerName.Text },
+                { "score", score },
+                { "map", $"{x}X{y}/{mine}" }
+            };
+            
+            json.Add(newMember);
+
+            JArray jsonSort = SortClearMember(json);
+
+            string jsonPath = @"Data\ClearMemberList.json";
+            File.WriteAllText(jsonPath, jsonSort.ToString());
+            return jsonSort;
+        }
         //게임버튼 클릭시 좌클릭, 우클릭, 좌우 동시 클릭 동작 구분 및 동작에 따른 함수 연동
         private void GameButton_Click(object sender, MouseEventArgs e)
         {

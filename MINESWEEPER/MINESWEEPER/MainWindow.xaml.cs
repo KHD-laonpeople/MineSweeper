@@ -222,25 +222,22 @@ namespace MINESWEEPER
                 {
                     buttons[i / x][i % x].IsEnabled = false;
                 }
-                string rank = Top5SaveLoad(x, y, mine, time);
-                string[] top = rank.Split('\n');
+                string oldRank = Top5SaveLoad(x, y, mine, time);
+                string[] top = oldRank.Split('\n');
                 MessageBox.Show($"축하합니다.\nRanking : Name / Score / Map\nTop1 : {top[0]}\nTop2 : {top[1]}\nTop3 : {top[2]}\nTop4 : {top[3]}\nTop5 : {top[4]}","WIN");
             }
             return;
         }
-
         private string Top5SaveLoad(int x, int y, int mine, int time)
         {
-            var reader = new StreamReader(File.OpenRead(@"List.csv"));
+            var reader = new StreamReader(File.OpenRead(@"..\..\..\List.csv"));
             int score = (x * y * mine) - (time * 2);
             string[] lastScore = { "0", "0", "0" };
             string saveList = null;
-            //랭킹 갱신 기능 추가 작업 필요, 같은값이 여러번 입력되는 오류 존재
             while(!reader.EndOfStream)
             {
                 var line = reader.ReadLine();
                 var text = line != "" ? line.Split(',') : new string[] { "0", "0", "0" };
-
                 
                 if (int.Parse(text[1]) <= score)
                 {
@@ -248,7 +245,7 @@ namespace MINESWEEPER
                     score = 0;
                     lastScore = text;
                 }
-                else if (int.Parse(text[1]) < int.Parse(lastScore[1]))
+                else if (int.Parse(text[1]) <= int.Parse(lastScore[1]))
                 {
                     saveList += $"{lastScore[0]},{lastScore[1]},{lastScore[2]}\n";
                     lastScore = text;
@@ -260,7 +257,7 @@ namespace MINESWEEPER
             }
             reader.Close();
 
-            using (StreamWriter file = new StreamWriter(@"List.csv"))
+            using (StreamWriter file = new StreamWriter(@"..\..\..\List.csv"))
             {
                 file.Write(saveList);
             }

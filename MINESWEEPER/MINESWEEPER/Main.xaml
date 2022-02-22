@@ -26,8 +26,8 @@
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <UniformGrid HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Rows="{Binding Width,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
-                            Columns="{Binding Height,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                            Rows="{Binding Height,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                            Columns="{Binding Width,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>

@@ -181,22 +181,22 @@ namespace Test_Minesweeper
             //Assert
             Assert.True(resultMineCount == testMineCount);
         }
-        [Theory]
-        [InlineData(0, 0, 0, 0)]
-        [InlineData(0, 0, 1, 0)]
-        [InlineData(0, 0, 10, 0)]
-        public void BoardAndMine(int width, int height, int mineCount, int assertMineCount)
-        {
-            //Arrange
-            int resultMineCount = 0;
-            int testMineCount = mineCount;
+        //[Theory]
+        //[InlineData(0, 0, 0, 0)]
+        //[InlineData(0, 0, 1, 0)]
+        //[InlineData(0, 0, 10, 0)]
+        //public void BoardAndMine(int width, int height, int mineCount, int assertMineCount)
+        //{
+        //    //Arrange
+        //    int resultMineCount = 0;
+        //    int testMineCount = mineCount;
 
-            //Action
-            var mines = MineManager.CreateMineLocations(width, height, testMineCount);
-            resultMineCount = GetMineCount(mines);
+        //    //Action
+        //    var mines = MineManager.CreateMineLocations(width, height, testMineCount);
+        //    resultMineCount = GetMineCount(mines);
 
-            //Assert
-            Assert.True(resultMineCount == assertMineCount);
-        }
+        //    //Assert
+        //    Assert.True(resultMineCount == assertMineCount);
+        //}
     }
 }
